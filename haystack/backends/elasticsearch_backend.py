@@ -463,25 +463,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                     }
                 },
             }
-            kwargs['query'].setdefault('filtered', {})
-            kwargs['query']['filtered'].setdefault('filter', {})
-            if kwargs['query']['filtered']['filter']:
-                compound_filter = {
-                    "and": [
-                        kwargs['query']['filtered']['filter'],
-                        polygon_filter,
-                    ]
-                }
-                kwargs['query']['filtered']['filter'] = compound_filter
-            else:
-                kwargs['query']['filtered']['filter'] = polygon_filter
-
-            # Remove the "filtered" key if we're not filtering. Otherwise,
-            # Elasticsearch will blow up.
-            if not kwargs['query']['filtered'].get('filter'):
-                kwargs['query'] = kwargs['query']['filtered']['query']
-
-            return kwargs
+            filters.append(polygon_filter)
 
         if dwithin is not None:
             lng, lat = dwithin['point'].get_coords()
