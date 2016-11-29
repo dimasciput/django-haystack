@@ -145,8 +145,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 self.conn.indices.put_mapping(index=self.index_name, doc_type='modelresult', body=current_mapping)
                 self.existing_mapping = current_mapping
             except Exception:
-                if not self.silently_fail:
-                    raise
+                raise
 
         self.setup_complete = True
 
@@ -255,7 +254,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                             fields='', highlight=False, facets=None,
                             date_facets=None, query_facets=None,
                             narrow_queries=None, spelling_query=None,
-                            within=None, dwithin=None, distance_point=None,
+                            within=None, dwithin=None, distance_point=None, polygon=None,
                             models=None, limit_to_registered_models=None,
                             result_class=None, **extra_kwargs):
         index = haystack.connections[self.connection_alias].get_unified_index()
@@ -453,6 +452,18 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 },
             }
             filters.append(within_filter)
+
+        if polygon is not None:
+            points = map(lambda x: {"lat": x[1], "lon": x[0]},
+                         polygon['polygon'].coords[0])
+            polygon_filter = {
+                "geo_polygon": {
+                    polygon['field']: {
+                        "points": points
+                    }
+                },
+            }
+            filters.append(polygon_filter)
 
         if dwithin is not None:
             lng, lat = dwithin['point'].get_coords()
@@ -908,6 +919,9 @@ class ElasticsearchSearchQuery(BaseSearchQuery):
 
         if self.dwithin:
             search_kwargs['dwithin'] = self.dwithin
+
+        if self.polygon:
+            search_kwargs['polygon'] = self.polygon
 
         if self.end_offset is not None:
             search_kwargs['end_offset'] = self.end_offset
