@@ -390,6 +390,12 @@ class SearchQuerySet(object):
         clone.query.add_field_facet(field, **options)
         return clone
 
+    def polygon(self, field, polygon):
+        """Spatial: Adds a polygon-based search to the query."""
+        clone = self._clone()
+        clone.query.add_polygon(field, polygon)
+        return clone
+
     def within(self, field, point_1, point_2):
         """Spatial: Adds a bounding box search to the query."""
         clone = self._clone()
