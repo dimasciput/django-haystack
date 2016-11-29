@@ -454,8 +454,8 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             filters.append(within_filter)
 
         if polygon is not None:
-            points = map(lambda x: {"lat": x[1], "lon": x[0]},
-                         polygon['polygon'].coords[0])
+            points = list(map(lambda x: {"lat": x[1], "lon": x[0]},
+                         polygon['polygon'].coords[0]))
             polygon_filter = {
                 "geo_polygon": {
                     polygon['field']: {
