@@ -22,6 +22,7 @@ from haystack.utils.app_loading import haystack_get_model
 
 try:
     import elasticsearch
+
     try:
         # let's try this, for elasticsearch > 1.7.0
         from elasticsearch.helpers import bulk
@@ -31,7 +32,6 @@ try:
     from elasticsearch.exceptions import NotFoundError
 except ImportError:
     raise MissingDependency("The 'elasticsearch' backend requires the installation of 'elasticsearch'. Please refer to the documentation.")
-
 
 DATETIME_REGEX = re.compile(
     r'^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T'
@@ -98,7 +98,6 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             }
         }
     }
-
 
     def __init__(self, connection_alias, **connection_options):
         super(ElasticsearchSearchBackend, self).__init__(connection_alias, **connection_options)
@@ -295,7 +294,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             for field, direction in sort_by:
                 if field == 'distance' and distance_point:
                     # Do the geo-enabled sort.
-                    lng, lat = distance_point['point'].get_coords()
+                    lng, lat = distance_point['point'].coords
                     sort_kwargs = {
                         "_geo_distance": {
                             distance_point['field']: [lng, lat],
@@ -454,8 +453,8 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             filters.append(within_filter)
 
         if polygon is not None:
-            points = list(map(lambda x: {"lat": x[1], "lon": x[0]},
-                         polygon['polygon'].coords[0]))
+            points = list(map(lambda x: [x[1], x[0]],
+                              polygon['polygon'].coords[0]))
             polygon_filter = {
                 "geo_polygon": {
                     polygon['field']: {
@@ -466,15 +465,15 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             filters.append(polygon_filter)
 
         if dwithin is not None:
-            lng, lat = dwithin['point'].get_coords()
+            lng, lat = dwithin['point'].coords
 
             # NB: the 1.0.0 release of elasticsearch introduce an
             #     incompatible change on the distance filter formating
             if elasticsearch.VERSION >= (1, 0, 0):
                 distance = "%(dist).6f%(unit)s" % {
-                        'dist': dwithin['distance'].km,
-                        'unit': "km"
-                    }
+                    'dist': dwithin['distance'].km,
+                    'unit': "km"
+                }
             else:
                 distance = dwithin['distance'].km
 
@@ -636,8 +635,8 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             model = haystack_get_model(app_label, model_name)
 
             if model and model in indexed_models:
+                index = source and unified_index.get_index(model)
                 for key, value in source.items():
-                    index = unified_index.get_index(model)
                     string_key = str(key)
 
                     if string_key in index.fields and hasattr(index.fields[string_key], 'convert'):
@@ -645,8 +644,8 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                     else:
                         additional_fields[string_key] = self._to_python(value)
 
-                del(additional_fields[DJANGO_CT])
-                del(additional_fields[DJANGO_ID])
+                del (additional_fields[DJANGO_CT])
+                del (additional_fields[DJANGO_ID])
 
                 if 'highlight' in raw_result:
                     additional_fields['highlighted'] = raw_result['highlight'].get(content_field, '')
@@ -759,21 +758,22 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
 
         return value
 
+
 # DRL_FIXME: Perhaps move to something where, if none of these
 #            match, call a custom method on the form that returns, per-backend,
 #            the right type of storage?
 DEFAULT_FIELD_MAPPING = {'type': 'string', 'analyzer': 'snowball'}
 FIELD_MAPPINGS = {
     'edge_ngram': {'type': 'string', 'analyzer': 'edgengram_analyzer'},
-    'ngram':      {'type': 'string', 'analyzer': 'ngram_analyzer'},
-    'date':       {'type': 'date'},
-    'datetime':   {'type': 'date'},
+    'ngram': {'type': 'string', 'analyzer': 'ngram_analyzer'},
+    'date': {'type': 'date'},
+    'datetime': {'type': 'date'},
 
-    'location':   {'type': 'geo_point'},
-    'boolean':    {'type': 'boolean'},
-    'float':      {'type': 'float'},
-    'long':       {'type': 'long'},
-    'integer':    {'type': 'long'},
+    'location': {'type': 'geo_point'},
+    'boolean': {'type': 'boolean'},
+    'float': {'type': 'float'},
+    'long': {'type': 'long'},
+    'integer': {'type': 'long'},
 }
 
 

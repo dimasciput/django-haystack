@@ -2,22 +2,21 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import time
 from threading import Thread
 
 from django import forms
-from django.conf import settings
-from django.core.urlresolvers import reverse
 from django.http import HttpRequest, QueryDict
-from django.test import override_settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils.six.moves import queue
+from django.urls import reverse
 from test_haystack.core.models import AnotherMockModel, MockModel
 
-from haystack import connection_router, connections, indexes
-from haystack.forms import FacetedSearchForm, model_choices, ModelSearchForm, SearchForm
+from haystack import connections, indexes
+from haystack.forms import FacetedSearchForm, ModelSearchForm, SearchForm
 from haystack.query import EmptySearchQuerySet
 from haystack.utils.loading import UnifiedIndex
-from haystack.views import FacetedSearchView, search_view_factory, SearchView
+from haystack.views import FacetedSearchView, SearchView, search_view_factory
 
 
 class InitialedSearchForm(SearchForm):
@@ -103,9 +102,10 @@ class SearchViewTestCase(TestCase):
         exceptions = []
 
         def threaded_view(resp_queue, view, request):
-            import time; time.sleep(2)
+            time.sleep(2)
+
             try:
-                inst = view(request)
+                view(request)
                 resp_queue.put(request.GET['name'])
             except Exception as e:
                 exceptions.append(e)
@@ -140,11 +140,19 @@ class SearchViewTestCase(TestCase):
         from django.conf import settings
         old = settings.HAYSTACK_CONNECTIONS['default'].get('INCLUDE_SPELLING', None)
 
+        settings.HAYSTACK_CONNECTIONS['default']['INCLUDE_SPELLING'] = True
+
         sv = SearchView()
         sv.query = 'Nothing'
         sv.results = []
         sv.build_page = lambda: (None, None)
-        output = sv.create_response()
+        sv.create_response()
+        context = sv.get_context()
+
+        self.assertIn('suggestion', context,
+                      msg='Spelling suggestions should be present even if'
+                          ' no results were returned')
+        self.assertEqual(context['suggestion'], None)
 
         # Restore
         settings.HAYSTACK_CONNECTIONS['default']['INCLUDE_SPELLING'] = old

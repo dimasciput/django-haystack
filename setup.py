@@ -12,13 +12,11 @@ except ImportError:
     from setuptools import setup
 
 install_requires = [
-    'Django>=1.8',
-    'Django<1.11',
+    'Django>=1.11',
 ]
 
 tests_require = [
-    'elasticsearch>=1.0.0,<6.0.0',
-    'pysolr>=3.3.2',
+    'pysolr>=3.7.0',
     'whoosh>=2.5.4,<3.0',
     'python-dateutil',
     'geopy==0.95.1',
@@ -26,11 +24,13 @@ tests_require = [
     'nose',
     'mock',
     'coverage',
+
+    'requests',
 ]
 
 setup(
     name='django-haystack',
-    version='2.5.1',
+    version='2.8.1',
     description='Pluggable search for Django.',
     author='Daniel Lindsley',
     author_email='daniel@toastdriven.com',
@@ -54,6 +54,8 @@ setup(
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
         'Framework :: Django',
+        'Framework :: Django :: 1.11',
+        'Framework :: Django :: 2.0',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
